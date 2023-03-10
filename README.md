@@ -33,7 +33,6 @@ The JSON structure is as follows:
     }
 }
 ```
-
 ## sql structure
 
 - Smartphones table
