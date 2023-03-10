@@ -1,80 +1,141 @@
-from django.http import HttpRequest, JsonResponse, HttpResponse
-from django.contrib.auth.models import User
-from .models import Person
+from django.http import HttpRequest, JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
 import json
+from .models import SmartPhone
 
-def get_users(request: HttpRequest) -> JsonResponse:
-    users = User.objects.all()
+
+def add_product(reqeust: HttpRequest) -> JsonResponse:
+    """add new product to database"""
+    if reqeust.method == 'POST':
+        # get body from request
+        body = reqeust.body
+        # get body data
+        decoded = body.decode()
+        # data to dict
+        data = json.loads(decoded)
+        # get all properties
+        price = data.get('price', False)
+        img_url = data.get('img_url', False)
+        color = data.get('color', False)
+        ram = data.get('ram', False)
+        memory = data.get('memory', False)
+        name = data.get('name', False)
+        model = data.get('model', False)
+
+        # check all properties is valid
+        if price == False or type(price) != float:
+            return JsonResponse({"status": "price field is required. or float"})
+        if img_url == False:
+            return JsonResponse({"status": "img_url field is required."})
+        if color == False:
+            return JsonResponse({"status": "color field is required."})
+        if ram == False:
+            return JsonResponse({"status": "ram field is required."})
+        if memory == False:
+            return JsonResponse({"status": "memory field is required."})
+        if name == False:
+            return JsonResponse({"status": "name field is required."})
+        if model == False:
+            return JsonResponse({"status": "model field is required."})
+
+        # create a inctance of SmartPhone 
+        smartphone = SmartPhone.objects.create(
+            price=price,
+            img_url=img_url,
+            color=color,
+            ram=ram,
+            memory=memory,
+            name=name,
+            model=model
+        )
+        # save data
+        smartphone.save()
+
+        # return data
+        returned = smartphone.to_dict()
+        return JsonResponse(returned)
     
-    res = []
 
-    for user in users:
-        res.append(
-            {
-                'id': user.id,
-                'username': user.username,
-                'password': user.password
-            }
-        )
+def get_all_product(reqeust: HttpRequest) -> JsonResponse:
+    """get products to database"""
+    if reqeust.method == "GET":
+        # get all priduct from database
+        products = SmartPhone.objects.all()
+        # results data
+        result = []
+        for product in products:
+            # add smartphone data as dict
+            result.append(product.to_dict())
+        
+        return JsonResponse(result, safe=False)
+    
 
-    return JsonResponse(res, safe=False)
+def get_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
+    """get product from database by id"""
+    if reqeust.method == "GET":
+        try:
+            # get product from database by id
+            product = SmartPhone.objects.get(id=pk)
+            return JsonResponse(product.to_dict())
+        except ObjectDoesNotExist:
+            return JsonResponse({"status": "object doesn't exist"})
+    
 
-    # data = {
-    #     'id': users[0].id
-    # }
+def delete_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
+    """delete product from database by id"""
+    if reqeust.method == "POST":
+        try:
+            # get product from database by id
+            product = SmartPhone.objects.get(id=pk)
+            product.delete()
+            return JsonResponse(product.to_dict())
+        except ObjectDoesNotExist:
+            return JsonResponse({"status": "object doesn't exist"})
+        
+    
 
-    # return JsonResponse(data)
+def update_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
+    """delete product from database by id"""
+    if reqeust.method == "POST":
+        try:
+            # get body from request
+            body = reqeust.body
+            # get body data
+            decoded = body.decode()
+            # data to dict
+            data = json.loads(decoded)
+            # get all properties
+            price = data.get('price', False)
+            img_url = data.get('img_url', False)
+            color = data.get('color', False)
+            ram = data.get('ram', False)
+            memory = data.get('memory', False)
+            name = data.get('name', False)
+            model = data.get('model', False)
 
-def get_people(request: HttpRequest, pk: int) -> JsonResponse:
-    people = Person.objects.get(id=pk)
+            # get product from database by id
+            product = SmartPhone.objects.get(id=pk)
 
-    res = [
-        {
-            'id': pk,
-            'First name': people.first_name,
-            'Last name': people.last_name,
-        }
-    ]
+            # check all properties is valid
+            if price is not False:
+                product.price = price
+            if img_url:
+                product.img_url = img_url
+            if color:
+                product.color = color
+            if ram:
+                product.ram = ram
+            if memory:
+                product.memory = memory
+            if name:
+                product.name = name
+            if model:
+                product.model = model
 
-    # for person in people:
-    #     res.append(
-    #         {
-    #             'id': person.id,
-    #             'First name': person.first_name,
-    #             'Last name': person.last_name
-    #         }
-    #     )
+            # save product
+            product.save()
 
-    return JsonResponse(res, safe=False)
-
-def get_people(request: HttpRequest) -> JsonResponse:
-    people = Person.objects.all()
-
-    res = []
-
-    for person in people:
-        res.append(
-            {
-                'id': person.id,
-                'First name': person.first_name,
-                'Last name': person.last_name
-            }
-        )
-
-    return JsonResponse(res, safe=False)
-
-def add_user(request: HttpRequest) -> JsonResponse:
-    body = request.body.decode()
-    data = json.loads(body)
-
-    p = Person(
-        first_name= data['first_name'],
-        last_name = data['last_name']
-    )
-
-    p.save()
-
-    return JsonResponse({
-        "Status": "OK",
-        "Status code": 200,
-    })
+            return JsonResponse(product.to_dict())
+            
+        except ObjectDoesNotExist:
+            return JsonResponse({"status": "object doesn't exist"})

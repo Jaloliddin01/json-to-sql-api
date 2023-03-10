@@ -3,6 +3,7 @@
 import os
 import sys
 
+sys.path.append('D:/homework/json-to-sql-api/api')
 
 def main():
     """Run administrative tasks."""
