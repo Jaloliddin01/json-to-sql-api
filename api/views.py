@@ -56,23 +56,42 @@ def add_product(reqeust: HttpRequest) -> JsonResponse:
         return JsonResponse(returned)
     
 
-def get_all_product(reqeust: HttpRequest) -> JsonResponse:
+def get_all_product(request: HttpRequest) -> JsonResponse:
     """get products to database"""
-    if reqeust.method == "GET":
+    if request.method == "GET":
         # get all priduct from database
         products = SmartPhone.objects.all()
+        data = request.GET
+        ram = data.get('ram', 0)
+        memory = data.get('memory', 0)
+        model = data.get('model', '')
+        mx = data.get('max', -1)
+        print(ram)
         # results data
         result = []
         for product in products:
             # add smartphone data as dict
-            result.append(product.to_dict())
+            if ram:
+                if product.ram == int(ram):
+                    result.append(product.to_dict())
+            elif memory:
+                if product.memory == int(memory):
+                    result.append(product.to_dict())
+            elif model != '':
+                if product.model == model:
+                    result.append(product.to_dict())
+            elif mx != -1:
+                if float(product.price) <= float(mx):
+                    result.append(product.to_dict())
+            else:
+                result.append(product.to_dict())
         
         return JsonResponse(result, safe=False)
     
 
-def get_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
+def get_product(request: HttpRequest, pk: int) -> JsonResponse:
     """get product from database by id"""
-    if reqeust.method == "GET":
+    if request.method == "GET":
         try:
             # get product from database by id
             product = SmartPhone.objects.get(id=pk)
@@ -81,9 +100,9 @@ def get_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
             return JsonResponse({"status": "object doesn't exist"})
     
 
-def delete_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
+def delete_product(request: HttpRequest, pk: int) -> JsonResponse:
     """delete product from database by id"""
-    if reqeust.method == "POST":
+    if request.method == "POST":
         try:
             # get product from database by id
             product = SmartPhone.objects.get(id=pk)
@@ -94,12 +113,12 @@ def delete_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
         
     
 
-def update_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
+def update_product(request: HttpRequest, pk: int) -> JsonResponse:
     """delete product from database by id"""
-    if reqeust.method == "POST":
+    if request.method == "POST":
         try:
             # get body from request
-            body = reqeust.body
+            body = request.body
             # get body data
             decoded = body.decode()
             # data to dict
@@ -139,3 +158,21 @@ def update_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
             
         except ObjectDoesNotExist:
             return JsonResponse({"status": "object doesn't exist"})
+
+def get_products_in_range(request: HttpRequest) -> JsonResponse:
+    if request.method == "GET":
+        body = request.GET
+        products = SmartPhone.objects.filter(price__gte=float(body['min']), price__lte=float(body['max']))
+        result = []
+        for product in products:
+            result.append(product.to_dict())
+        return JsonResponse(result, safe=False)
+
+def get_products_in_models(request: HttpRequest) -> JsonResponse:
+    if request.method == "GET":
+        args = request.GET.getlist('model')
+        models = SmartPhone.objects.filter(model__in=args['model'])
+        result = []
+        for model in models:
+            result.append(model.to_dict())
+        return JsonResponse(result, safe=False)
